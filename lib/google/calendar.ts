@@ -81,6 +81,18 @@ export async function deleteGoogleEvent(eventId: string) {
   await calendar.events.delete({ calendarId, eventId });
 }
 
+/** Lista as agendas (calendarList) da conta conectada, pra admin escolher qual usar */
+export async function listGoogleCalendars() {
+  const { calendar } = await getAuthedCalendarClient();
+  const res = await calendar.calendarList.list({ minAccessRole: "writer" });
+  return (res.data.items ?? []).map((c) => ({
+    id: c.id!,
+    summary: c.summary ?? "(sem nome)",
+    primary: !!c.primary,
+    backgroundColor: c.backgroundColor ?? null,
+  }));
+}
+
 /** Lista eventos do Calendar (usado para sync inicial / botão "puxar do Google") */
 export async function listGoogleEvents(opts?: { from?: Date; to?: Date }) {
   const { calendar, calendarId } = await getAuthedCalendarClient();

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { SyncFromGoogleButton } from "@/components/SyncFromGoogleButton";
+import { CalendarPicker } from "@/components/CalendarPicker";
 
 export const dynamic = "force-dynamic";
 
@@ -23,16 +24,18 @@ export default async function GoogleConnectPage() {
               <p className="text-green-800 font-medium">
                 ✅ Conectado como <strong>{creds.connected_email}</strong>
               </p>
-              <p className="text-green-700 mt-1">
-                Calendar ID: <code>{creds.calendar_id}</code>
-              </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="border-t border-slate-100 pt-4">
+              <CalendarPicker currentId={creds.calendar_id} />
+            </div>
+
+            <div className="border-t border-slate-100 pt-4 space-y-2">
               <SyncFromGoogleButton />
               <p className="text-xs text-slate-500">
-                Puxa eventos dos próximos 90 dias do Google e cria/atualiza no banco.
-                Eventos criados pelo app já são salvos no Google automaticamente.
+                Puxa eventos dos próximos 90 dias da agenda selecionada e
+                cria/atualiza no banco. Eventos criados pelo app já são salvos
+                no Google automaticamente.
               </p>
             </div>
 
