@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatShort } from "@/lib/format";
+import { DeleteEventButton } from "@/components/DeleteEventButton";
 
 export default async function AdminDashboard() {
   const supabase = createSupabaseServerClient();
@@ -78,7 +79,7 @@ export default async function AdminDashboard() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-3">
                       <Link
                         href={`/admin/eventos/${e.id}/presencas`}
                         className="text-xs text-slate-500 hover:text-slate-900"
@@ -91,6 +92,7 @@ export default async function AdminDashboard() {
                       >
                         editar
                       </Link>
+                      <DeleteEventButton eventId={e.id} title={e.title} />
                     </div>
                   </td>
                 </tr>

@@ -106,20 +106,22 @@ export async function DELETE(
     .eq("id", params.id)
     .maybeSingle();
 
+  // Best-effort: tenta remover do Google, mas nunca bloqueia a exclusão local.
+  // Motivos comuns de falha: admin trocou de agenda (404), conexão Google
+  // perdida, evento já apagado manualmente no Google, etc.
+  let googleWarning: string | null = null;
   if (existing?.google_event_id) {
     try {
       await deleteGoogleEvent(existing.google_event_id);
     } catch (err: any) {
-      if (!isNotConnected(err)) {
-        return NextResponse.json(
-          { error: "Falha ao remover do Google: " + err.message },
-          { status: 500 },
-        );
-      }
+      googleWarning = err?.message ?? "erro desconhecido";
+      console.warn(
+        `[events.delete] Falha ao remover ${existing.google_event_id} do Google: ${googleWarning}`,
+      );
     }
   }
 
   const { error } = await supabase.from("events").delete().eq("id", params.id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, google_warning: googleWarning });
 }
