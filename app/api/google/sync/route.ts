@@ -27,8 +27,21 @@ export async function POST() {
     if (!g.id || !g.summary) continue;
 
     const isAllDay = !!g.start?.date;
-    const startISO = g.start?.dateTime ?? (g.start?.date ? `${g.start.date}T00:00:00.000Z` : null);
-    const endISO = g.end?.dateTime ?? (g.end?.date ? `${g.end.date}T00:00:00.000Z` : null);
+    let startISO: string | null;
+    let endISO: string | null;
+
+    if (isAllDay) {
+      // All-day no Google vem como "yyyy-MM-dd". Guardamos como meio-dia UTC
+      // para preservar o "dia" em qualquer TZ ao formatar/filtrar.
+      // Também: end no Google é EXCLUSIVO (-1 para virar inclusivo aqui).
+      startISO = `${g.start!.date}T12:00:00.000Z`;
+      const endD = new Date(`${g.end!.date}T12:00:00.000Z`);
+      endD.setUTCDate(endD.getUTCDate() - 1);
+      endISO = endD.toISOString();
+    } else {
+      startISO = g.start?.dateTime ?? null;
+      endISO = g.end?.dateTime ?? null;
+    }
     if (!startISO || !endISO) continue;
 
     // já existe?

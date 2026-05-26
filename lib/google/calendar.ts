@@ -40,12 +40,16 @@ export async function getAuthedCalendarClient() {
 
 function toGoogleEvent(input: EventInput): calendar_v3.Schema$Event {
   if (input.allDay) {
+    // Google all-day events usam end.date EXCLUSIVO (RFC 5545 / iCal).
+    // Para um evento 23/10 -> 25/10 (3 dias visíveis), enviamos end=26/10.
+    const endExclusive = new Date(input.endAt);
+    endExclusive.setUTCDate(endExclusive.getUTCDate() + 1);
     return {
       summary: input.title,
       description: input.description ?? undefined,
       location: input.location ?? undefined,
       start: { date: input.startAt.slice(0, 10) },
-      end: { date: input.endAt.slice(0, 10) },
+      end: { date: endExclusive.toISOString().slice(0, 10) },
     };
   }
   return {

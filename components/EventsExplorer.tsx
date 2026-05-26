@@ -4,7 +4,21 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithChurch, Church } from "@/lib/types";
 import { formatShort, formatDay, formatTime } from "@/lib/format";
-import { parseISO, isSameDay, startOfMonth, endOfMonth, eachDayOfInterval, format, addMonths, subMonths, isWithinInterval } from "date-fns";
+import {
+  parseISO,
+  isSameDay,
+  startOfMonth,
+  endOfMonth,
+  startOfDay,
+  endOfDay,
+  eachDayOfInterval,
+  format,
+  addMonths,
+  subMonths,
+  areIntervalsOverlapping,
+  max as maxDate,
+  min as minDate,
+} from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type Props = {
@@ -21,7 +35,16 @@ export function EventsExplorer({ events, churches }: Props) {
   const filtered = useMemo(() => {
     return events.filter((e) => {
       if (churchFilter !== "all" && e.church?.slug !== churchFilter) return false;
-      if (selectedDate && !isSameDay(parseISO(e.start_at), selectedDate)) return false;
+      if (selectedDate) {
+        // evento aparece no dia X se o intervalo [start, end] cobre qualquer
+        // parte daquele dia (útil para eventos multi-dia)
+        const overlap = areIntervalsOverlapping(
+          { start: parseISO(e.start_at), end: parseISO(e.end_at) },
+          { start: startOfDay(selectedDate), end: endOfDay(selectedDate) },
+          { inclusive: true },
+        );
+        if (!overlap) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const matches =
@@ -34,14 +57,22 @@ export function EventsExplorer({ events, churches }: Props) {
     });
   }, [events, churchFilter, selectedDate, search]);
 
-  // dias do mês atual com eventos (para destacar no mini calendário)
+  // dias do mês atual com eventos (para destacar no mini calendário).
+  // Para eventos multi-dia, marca cada dia do intervalo.
   const daysWithEvents = useMemo(() => {
     const map = new Map<string, EventWithChurch[]>();
     const monthStart = startOfMonth(cursor);
     const monthEnd = endOfMonth(cursor);
     for (const e of events) {
-      const d = parseISO(e.start_at);
-      if (isWithinInterval(d, { start: monthStart, end: monthEnd })) {
+      const eStart = parseISO(e.start_at);
+      const eEnd = parseISO(e.end_at);
+      // intersecta com o mês visível
+      if (eEnd < monthStart || eStart > monthEnd) continue;
+      const days = eachDayOfInterval({
+        start: maxDate([eStart, monthStart]),
+        end: minDate([eEnd, monthEnd]),
+      });
+      for (const d of days) {
         const k = format(d, "yyyy-MM-dd");
         if (!map.has(k)) map.set(k, []);
         map.get(k)!.push(e);

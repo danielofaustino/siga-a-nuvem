@@ -37,14 +37,18 @@ export function EventForm({ churches, event }: Props) {
     setLoading(true);
     setError(null);
 
+    // Para all-day, guardamos meio-dia UTC do dia escolhido — isso preserva
+    // a data em qualquer TZ (UTC midnight viraria dia anterior no Brasil).
+    const toIsoAllDay = (local: string) => `${local.slice(0, 10)}T12:00:00.000Z`;
+
     const body = {
       title,
       description: description || null,
       location: location || null,
       church_id: churchId || null,
       // input datetime-local não tem TZ — assumimos hora local do navegador → ISO
-      start_at: new Date(startAt).toISOString(),
-      end_at: new Date(endAt).toISOString(),
+      start_at: allDay ? toIsoAllDay(startAt) : new Date(startAt).toISOString(),
+      end_at: allDay ? toIsoAllDay(endAt) : new Date(endAt).toISOString(),
       all_day: allDay,
       image_url: imageUrl || null,
       capacity: capacity ? parseInt(capacity, 10) : null,
