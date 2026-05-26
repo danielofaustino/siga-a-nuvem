@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { formatEventDate } from "@/lib/format";
 import { RsvpForm } from "@/components/RsvpForm";
+import { EventMap } from "@/components/EventMap";
 
 export const revalidate = 30;
 
@@ -76,6 +77,19 @@ export default async function EventPage({ params }: { params: { id: string } }) 
           </div>
         </div>
       </article>
+
+      {(() => {
+        const address = event.location || event.church?.address;
+        return address ? (
+          <section className="card overflow-hidden">
+            <div className="p-4 border-b border-slate-100">
+              <h2 className="text-base font-bold text-slate-900">Onde será</h2>
+              <p className="text-sm text-slate-500 mt-0.5">{address}</p>
+            </div>
+            <EventMap address={address} height={320} className="rounded-none border-0" />
+          </section>
+        ) : null;
+      })()}
 
       <section className="card p-6">
         <h2 className="text-lg font-bold text-slate-900 mb-1">Confirmar presença</h2>

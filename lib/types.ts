@@ -24,7 +24,7 @@ export type EventRow = {
 };
 
 export type EventWithChurch = EventRow & {
-  church: Pick<Church, "id" | "name" | "slug" | "color"> | null;
+  church: Pick<Church, "id" | "name" | "slug" | "color" | "address"> | null;
   attendance_count?: number;
 };
 

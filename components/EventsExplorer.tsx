@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithChurch, Church } from "@/lib/types";
 import { formatShort, formatDay, formatTime } from "@/lib/format";
+import { EventMap } from "./EventMap";
 import {
   parseISO,
   isSameDay,
@@ -178,35 +179,43 @@ function FilterChip({
 }
 
 function EventCard({ event }: { event: EventWithChurch }) {
+  const address = event.location || event.church?.address || null;
   return (
-    <Link href={`/eventos/${event.id}`} className="block card p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-1">
-            {event.church && (
-              <span
-                className="inline-block w-2 h-2 rounded-full"
-                style={{ backgroundColor: event.church.color ?? "#3b65ff" }}
-              />
-            )}
-            <span className="text-xs text-slate-500">
-              {event.church?.name ?? "Evento geral"}
-            </span>
+    <div className="card overflow-hidden hover:shadow-md transition-shadow">
+      <Link href={`/eventos/${event.id}`} className="block p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-1">
+              {event.church && (
+                <span
+                  className="inline-block w-2 h-2 rounded-full"
+                  style={{ backgroundColor: event.church.color ?? "#3b65ff" }}
+                />
+              )}
+              <span className="text-xs text-slate-500">
+                {event.church?.name ?? "Evento geral"}
+              </span>
+            </div>
+            <h3 className="font-semibold text-slate-900">{event.title}</h3>
+            <p className="text-sm text-slate-600 mt-1">
+              📅 {formatShort(event.start_at)}
+              {address && <> · 📍 {address}</>}
+            </p>
           </div>
-          <h3 className="font-semibold text-slate-900">{event.title}</h3>
-          <p className="text-sm text-slate-600 mt-1">
-            📅 {formatShort(event.start_at)}
-            {event.location && <> · 📍 {event.location}</>}
-          </p>
-        </div>
-        <div className="text-right shrink-0">
-          <div className="text-xs text-slate-400">presenças</div>
-          <div className="text-lg font-bold text-brand-600">
-            {event.attendance_count ?? 0}
+          <div className="text-right shrink-0">
+            <div className="text-xs text-slate-400">presenças</div>
+            <div className="text-lg font-bold text-brand-600">
+              {event.attendance_count ?? 0}
+            </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      {address && (
+        <div className="px-4 pb-4">
+          <EventMap address={address} height={180} />
+        </div>
+      )}
+    </div>
   );
 }
 

@@ -11,7 +11,7 @@ export default async function HomePage() {
   const [{ data: events }, { data: churches }, { data: counts }] = await Promise.all([
     supabase
       .from("events")
-      .select("*, church:churches(id, name, slug, color)")
+      .select("*, church:churches(id, name, slug, color, address)")
       .eq("is_published", true)
       .gte("end_at", new Date(Date.now() - 1000 * 60 * 60 * 6).toISOString())
       .order("start_at", { ascending: true })
