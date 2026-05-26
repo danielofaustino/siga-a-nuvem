@@ -1,0 +1,20 @@
+{
+  "name": "Siga a Nuvem · Regional 78",
+  "short_name": "Siga a Nuvem",
+  "description": "Eventos dos jovens da Regional 78 - AD Madureira",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f7fb",
+  "theme_color": "#1f3ef5",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

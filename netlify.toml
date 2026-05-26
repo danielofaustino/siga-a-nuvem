@@ -1,0 +1,9 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# As env vars são configuradas no painel do Netlify (Site settings → Environment).
+# Veja .env.example para a lista completa.

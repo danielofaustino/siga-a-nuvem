@@ -1,0 +1,220 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Church, EventRow } from "@/lib/types";
+import { isoToInputDateTime } from "@/lib/format";
+
+type Props = {
+  churches: Pick<Church, "id" | "name" | "slug" | "color">[];
+  event?: EventRow;
+};
+
+export function EventForm({ churches, event }: Props) {
+  const router = useRouter();
+  const editing = !!event;
+
+  const [title, setTitle] = useState(event?.title ?? "");
+  const [description, setDescription] = useState(event?.description ?? "");
+  const [location, setLocation] = useState(event?.location ?? "");
+  const [churchId, setChurchId] = useState(event?.church_id ?? "");
+  const [startAt, setStartAt] = useState(
+    event ? isoToInputDateTime(event.start_at) : "",
+  );
+  const [endAt, setEndAt] = useState(
+    event ? isoToInputDateTime(event.end_at) : "",
+  );
+  const [allDay, setAllDay] = useState(event?.all_day ?? false);
+  const [imageUrl, setImageUrl] = useState(event?.image_url ?? "");
+  const [capacity, setCapacity] = useState(event?.capacity?.toString() ?? "");
+  const [isPublished, setIsPublished] = useState(event?.is_published ?? true);
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    const body = {
+      title,
+      description: description || null,
+      location: location || null,
+      church_id: churchId || null,
+      // input datetime-local não tem TZ — assumimos hora local do navegador → ISO
+      start_at: new Date(startAt).toISOString(),
+      end_at: new Date(endAt).toISOString(),
+      all_day: allDay,
+      image_url: imageUrl || null,
+      capacity: capacity ? parseInt(capacity, 10) : null,
+      is_published: isPublished,
+    };
+
+    try {
+      const url = editing ? `/api/events/${event!.id}` : "/api/events";
+      const method = editing ? "PUT" : "POST";
+      const res = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao salvar");
+      router.push("/admin");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function onDelete() {
+    if (!event) return;
+    if (!confirm("Excluir este evento? A ação também removerá do Google Calendar.")) {
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/events/${event.id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? "Erro ao excluir");
+      }
+      router.push("/admin");
+      router.refresh();
+    } catch (err: any) {
+      setError(err.message);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={onSubmit} className="card p-6 space-y-4">
+      <div>
+        <label className="label">Título *</label>
+        <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
+      </div>
+
+      <div>
+        <label className="label">Descrição</label>
+        <textarea
+          className="input min-h-[100px]"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="label">Igreja</label>
+          <select className="input" value={churchId} onChange={(e) => setChurchId(e.target.value)}>
+            <option value="">— Selecione —</option>
+            {churches.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Local (opcional)</label>
+          <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="label">Início *</label>
+          <input
+            type="datetime-local"
+            className="input"
+            required
+            value={startAt}
+            onChange={(e) => setStartAt(e.target.value)}
+          />
+        </div>
+        <div>
+          <label className="label">Fim *</label>
+          <input
+            type="datetime-local"
+            className="input"
+            required
+            value={endAt}
+            onChange={(e) => setEndAt(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <div>
+          <label className="label">URL da imagem (opcional)</label>
+          <input className="input" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
+        </div>
+        <div>
+          <label className="label">Capacidade (opcional)</label>
+          <input
+            type="number"
+            className="input"
+            value={capacity}
+            onChange={(e) => setCapacity(e.target.value)}
+            min={1}
+          />
+        </div>
+      </div>
+
+      <div className="flex items-center gap-6">
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
+          Dia inteiro
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={isPublished}
+            onChange={(e) => setIsPublished(e.target.checked)}
+          />
+          Publicado
+        </label>
+      </div>
+
+      {error && (
+        <div className="rounded-lg bg-red-50 border border-red-200 p-3 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          {editing && (
+            <button
+              type="button"
+              onClick={onDelete}
+              className="btn-danger"
+              disabled={loading}
+            >
+              Excluir
+            </button>
+          )}
+        </div>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => router.push("/admin")}
+            className="btn-secondary"
+          >
+            Cancelar
+          </button>
+          <button type="submit" disabled={loading} className="btn-primary">
+            {loading ? "Salvando..." : editing ? "Salvar alterações" : "Criar evento"}
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs text-slate-400">
+        Ao salvar, o evento é sincronizado com o Google Calendar conectado.
+      </p>
+    </form>
+  );
+}
