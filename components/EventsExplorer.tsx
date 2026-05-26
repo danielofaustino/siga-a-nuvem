@@ -33,10 +33,12 @@ export function EventsExplorer({ events, churches }: Props) {
   const [cursor, setCursor] = useState<Date>(new Date());
   const [search, setSearch] = useState("");
 
-  // proximidade
+  // proximidade — origem pode ser endereço digitado OU GPS do dispositivo
   const [myAddress, setMyAddress] = useState("");
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationSource, setLocationSource] = useState<"address" | "gps" | null>(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
 
   async function applyProximity(e: React.FormEvent) {
@@ -53,17 +55,51 @@ export function EventsExplorer({ events, churches }: Props) {
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao localizar endereço");
       setMyLocation({ lat: json.lat, lng: json.lng });
+      setLocationSource("address");
     } catch (err: any) {
       setMyLocation(null);
+      setLocationSource(null);
       setGeoError(err.message);
     } finally {
       setGeoLoading(false);
     }
   }
 
+  function useDeviceLocation() {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setGeoError("Seu navegador não suporta geolocalização.");
+      return;
+    }
+    setGpsLoading(true);
+    setGeoError(null);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setLocationSource("gps");
+        setMyAddress("");
+        setGpsLoading(false);
+      },
+      (err) => {
+        // 1: PERMISSION_DENIED, 2: POSITION_UNAVAILABLE, 3: TIMEOUT
+        const msg =
+          err.code === 1
+            ? "Permissão de localização negada. Habilite nas configurações do navegador."
+            : err.code === 3
+            ? "Tempo esgotado tentando obter sua localização."
+            : "Não foi possível obter sua localização.";
+        setGeoError(msg);
+        setMyLocation(null);
+        setLocationSource(null);
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 },
+    );
+  }
+
   function clearProximity() {
     setMyAddress("");
     setMyLocation(null);
+    setLocationSource(null);
     setGeoError(null);
   }
 
@@ -157,14 +193,19 @@ export function EventsExplorer({ events, churches }: Props) {
             placeholder="Rua, número, cidade"
             value={myAddress}
             onChange={(e) => setMyAddress(e.target.value)}
+            disabled={gpsLoading}
           />
           <div className="flex items-center gap-2">
             <button
               type="submit"
-              disabled={geoLoading || !myAddress.trim()}
+              disabled={geoLoading || gpsLoading || !myAddress.trim()}
               className="btn-primary flex-1 py-1.5 text-xs"
             >
-              {geoLoading ? "Localizando..." : myLocation ? "Atualizar" : "Ordenar por proximidade"}
+              {geoLoading
+                ? "Localizando..."
+                : locationSource === "address"
+                ? "Atualizar"
+                : "Usar endereço"}
             </button>
             {myLocation && (
               <button
@@ -176,12 +217,31 @@ export function EventsExplorer({ events, churches }: Props) {
               </button>
             )}
           </div>
-          {geoError && (
-            <p className="text-xs text-red-600">{geoError}</p>
-          )}
+
+          <div className="flex items-center gap-2 my-1">
+            <div className="flex-1 h-px bg-slate-200" />
+            <span className="text-[10px] uppercase tracking-wide text-slate-400">ou</span>
+            <div className="flex-1 h-px bg-slate-200" />
+          </div>
+
+          <button
+            type="button"
+            onClick={useDeviceLocation}
+            disabled={gpsLoading || geoLoading}
+            className="btn-secondary w-full text-xs py-1.5"
+          >
+            {gpsLoading
+              ? "Obtendo localização..."
+              : locationSource === "gps"
+              ? "📍 Usando sua localização atual"
+              : "📍 Usar minha localização (GPS)"}
+          </button>
+
+          {geoError && <p className="text-xs text-red-600">{geoError}</p>}
           {myLocation && !geoError && (
             <p className="text-xs text-green-700">
               ✓ Eventos ordenados pelos mais próximos
+              {locationSource === "gps" ? " (via GPS)" : ""}
             </p>
           )}
         </form>
