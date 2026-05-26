@@ -6,7 +6,7 @@ import { Church, EventRow } from "@/lib/types";
 import { isoToInputDateTime } from "@/lib/format";
 
 type Props = {
-  churches: Pick<Church, "id" | "name" | "slug" | "color">[];
+  churches: Pick<Church, "id" | "name" | "slug" | "color" | "address">[];
   event?: EventRow;
 };
 
@@ -109,7 +109,26 @@ export function EventForm({ churches, event }: Props) {
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
           <label className="label">Igreja</label>
-          <select className="input" value={churchId} onChange={(e) => setChurchId(e.target.value)}>
+          <select
+            className="input"
+            value={churchId}
+            onChange={(e) => {
+              const newId = e.target.value;
+              // auto-preenche o local com o endereço da igreja selecionada se:
+              // - local está vazio, OU
+              // - local corresponde ao endereço da igreja anteriormente selecionada
+              // (evita pisar em endereço digitado manualmente pelo admin)
+              const prev = churches.find((c) => c.id === churchId);
+              const next = churches.find((c) => c.id === newId);
+              if (
+                next?.address &&
+                (!location.trim() || (prev?.address && location === prev.address))
+              ) {
+                setLocation(next.address);
+              }
+              setChurchId(newId);
+            }}
+          >
             <option value="">— Selecione —</option>
             {churches.map((c) => (
               <option key={c.id} value={c.id}>
@@ -119,8 +138,13 @@ export function EventForm({ churches, event }: Props) {
           </select>
         </div>
         <div>
-          <label className="label">Local (opcional)</label>
-          <input className="input" value={location} onChange={(e) => setLocation(e.target.value)} />
+          <label className="label">Local</label>
+          <input
+            className="input"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="Preenchido com o endereço da igreja"
+          />
         </div>
       </div>
 

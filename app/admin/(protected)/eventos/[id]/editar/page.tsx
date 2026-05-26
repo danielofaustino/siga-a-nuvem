@@ -7,7 +7,7 @@ export default async function EditEventPage({ params }: { params: { id: string }
 
   const [{ data: event }, { data: churches }] = await Promise.all([
     supabase.from("events").select("*").eq("id", params.id).maybeSingle(),
-    supabase.from("churches").select("id, name, slug, color").order("name"),
+    supabase.from("churches").select("id, name, slug, color, address").order("name"),
   ]);
 
   if (!event) notFound();

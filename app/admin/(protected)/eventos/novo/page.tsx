@@ -5,7 +5,7 @@ export default async function NewEventPage() {
   const supabase = createSupabaseServerClient();
   const { data: churches } = await supabase
     .from("churches")
-    .select("id, name, slug, color")
+    .select("id, name, slug, color, address")
     .order("name");
 
   return (
