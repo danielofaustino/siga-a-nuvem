@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { geocodeAddress } from "@/lib/geocode";
 
 const ChurchSchema = z.object({
   name: z.string().min(1),
   slug: z.string().regex(/^[a-z0-9-]+$/, "slug deve ser minúsculo, sem espaço"),
   address: z.string().nullable().optional(),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  instagram: z.string().max(80).nullable().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -20,9 +22,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: parsed.error.message }, { status: 400 });
   }
 
+  // Geocoda em best-effort: se Nominatim falhar, salva sem coordenadas.
+  let latitude: number | null = null;
+  let longitude: number | null = null;
+  if (parsed.data.address) {
+    const point = await geocodeAddress(parsed.data.address);
+    if (point) {
+      latitude = point.lat;
+      longitude = point.lng;
+    }
+  }
+
   const { data, error } = await supabase
     .from("churches")
-    .insert(parsed.data)
+    .insert({ ...parsed.data, latitude, longitude })
     .select()
     .single();
 

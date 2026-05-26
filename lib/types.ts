@@ -4,6 +4,9 @@ export type Church = {
   slug: string;
   address: string | null;
   color: string | null;
+  instagram: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type EventRow = {
@@ -24,7 +27,10 @@ export type EventRow = {
 };
 
 export type EventWithChurch = EventRow & {
-  church: Pick<Church, "id" | "name" | "slug" | "color" | "address"> | null;
+  church: Pick<
+    Church,
+    "id" | "name" | "slug" | "color" | "address" | "instagram" | "latitude" | "longitude"
+  > | null;
   attendance_count?: number;
 };
 

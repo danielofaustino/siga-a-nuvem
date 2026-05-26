@@ -15,6 +15,7 @@ export function ChurchesManager({ initial }: Props) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [address, setAddress] = useState("");
+  const [instagram, setInstagram] = useState("");
   const [color, setColor] = useState("#3b65ff");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -27,7 +28,13 @@ export function ChurchesManager({ initial }: Props) {
       const res = await fetch("/api/churches", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, address: address || null, color }),
+        body: JSON.stringify({
+          name,
+          slug,
+          address: address || null,
+          instagram: instagram || null,
+          color,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao salvar");
@@ -35,6 +42,7 @@ export function ChurchesManager({ initial }: Props) {
       setName("");
       setSlug("");
       setAddress("");
+      setInstagram("");
       router.refresh();
     } catch (err: any) {
       setError(err.message);
@@ -132,6 +140,18 @@ export function ChurchesManager({ initial }: Props) {
         <div>
           <label className="label">Endereço</label>
           <input className="input" value={address} onChange={(e) => setAddress(e.target.value)} />
+          <p className="text-xs text-slate-400 mt-1">
+            Usado para mostrar no mapa e calcular proximidade.
+          </p>
+        </div>
+        <div>
+          <label className="label">Instagram (@user)</label>
+          <input
+            className="input"
+            value={instagram}
+            placeholder="@adjardimdracena"
+            onChange={(e) => setInstagram(e.target.value)}
+          />
         </div>
         <div>
           <label className="label">Cor</label>
@@ -165,6 +185,7 @@ function ChurchEditRow({ church, onCancel, onSaved }: EditProps) {
   const [name, setName] = useState(church.name);
   const [slug, setSlug] = useState(church.slug);
   const [address, setAddress] = useState(church.address ?? "");
+  const [instagram, setInstagram] = useState(church.instagram ?? "");
   const [color, setColor] = useState(church.color ?? "#3b65ff");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +198,13 @@ function ChurchEditRow({ church, onCancel, onSaved }: EditProps) {
       const res = await fetch(`/api/churches/${church.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, slug, address: address || null, color }),
+        body: JSON.stringify({
+          name,
+          slug,
+          address: address || null,
+          instagram: instagram || null,
+          color,
+        }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error ?? "Erro ao salvar");
@@ -219,6 +246,15 @@ function ChurchEditRow({ church, onCancel, onSaved }: EditProps) {
           className="input"
           value={address}
           onChange={(e) => setAddress(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="label">Instagram</label>
+        <input
+          className="input"
+          value={instagram}
+          placeholder="@adjardimdracena"
+          onChange={(e) => setInstagram(e.target.value)}
         />
       </div>
       <div className="flex items-center gap-2">

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithChurch, Church } from "@/lib/types";
 import { formatShort, formatDay, formatTime } from "@/lib/format";
-import { EventMap } from "./EventMap";
+import { haversineKm, formatKm } from "@/lib/distance";
 import {
   parseISO,
   isSameDay,
@@ -33,30 +33,84 @@ export function EventsExplorer({ events, churches }: Props) {
   const [cursor, setCursor] = useState<Date>(new Date());
   const [search, setSearch] = useState("");
 
+  // proximidade
+  const [myAddress, setMyAddress] = useState("");
+  const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
+  async function applyProximity(e: React.FormEvent) {
+    e.preventDefault();
+    if (!myAddress.trim()) return;
+    setGeoLoading(true);
+    setGeoError(null);
+    try {
+      const res = await fetch("/api/geocode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ address: myAddress }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Erro ao localizar endereço");
+      setMyLocation({ lat: json.lat, lng: json.lng });
+    } catch (err: any) {
+      setMyLocation(null);
+      setGeoError(err.message);
+    } finally {
+      setGeoLoading(false);
+    }
+  }
+
+  function clearProximity() {
+    setMyAddress("");
+    setMyLocation(null);
+    setGeoError(null);
+  }
+
+  // Lista filtrada e (se proximidade ativa) ordenada por distância,
+  // com a distância de cada evento já calculada para o card.
   const filtered = useMemo(() => {
-    return events.filter((e) => {
-      if (churchFilter !== "all" && e.church?.slug !== churchFilter) return false;
-      if (selectedDate) {
-        // evento aparece no dia X se o intervalo [start, end] cobre qualquer
-        // parte daquele dia (útil para eventos multi-dia)
-        const overlap = areIntervalsOverlapping(
-          { start: parseISO(e.start_at), end: parseISO(e.end_at) },
-          { start: startOfDay(selectedDate), end: endOfDay(selectedDate) },
-          { inclusive: true },
-        );
-        if (!overlap) return false;
-      }
-      if (search) {
-        const q = search.toLowerCase();
-        const matches =
-          e.title.toLowerCase().includes(q) ||
-          (e.description ?? "").toLowerCase().includes(q) ||
-          (e.location ?? "").toLowerCase().includes(q);
-        if (!matches) return false;
-      }
-      return true;
-    });
-  }, [events, churchFilter, selectedDate, search]);
+    const list = events
+      .filter((e) => {
+        if (churchFilter !== "all" && e.church?.slug !== churchFilter) return false;
+        if (selectedDate) {
+          const overlap = areIntervalsOverlapping(
+            { start: parseISO(e.start_at), end: parseISO(e.end_at) },
+            { start: startOfDay(selectedDate), end: endOfDay(selectedDate) },
+            { inclusive: true },
+          );
+          if (!overlap) return false;
+        }
+        if (search) {
+          const q = search.toLowerCase();
+          const matches =
+            e.title.toLowerCase().includes(q) ||
+            (e.description ?? "").toLowerCase().includes(q) ||
+            (e.location ?? "").toLowerCase().includes(q);
+          if (!matches) return false;
+        }
+        return true;
+      })
+      .map((e) => {
+        const c = e.church;
+        const distanceKm =
+          myLocation && c?.latitude != null && c?.longitude != null
+            ? haversineKm(myLocation, { lat: c.latitude, lng: c.longitude })
+            : null;
+        return { event: e, distanceKm };
+      });
+
+    if (myLocation) {
+      // ordena ascendente; eventos sem coordenadas vão pro fim
+      list.sort((a, b) => {
+        if (a.distanceKm == null && b.distanceKm == null) return 0;
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm - b.distanceKm;
+      });
+    }
+    return list;
+  }, [events, churchFilter, selectedDate, search, myLocation]);
 
   // dias do mês atual com eventos (para destacar no mini calendário).
   // Para eventos multi-dia, marca cada dia do intervalo.
@@ -95,6 +149,42 @@ export function EventsExplorer({ events, churches }: Props) {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+
+        <form className="card p-4 space-y-2" onSubmit={applyProximity}>
+          <label className="label">Meu endereço</label>
+          <input
+            className="input"
+            placeholder="Rua, número, cidade"
+            value={myAddress}
+            onChange={(e) => setMyAddress(e.target.value)}
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={geoLoading || !myAddress.trim()}
+              className="btn-primary flex-1 py-1.5 text-xs"
+            >
+              {geoLoading ? "Localizando..." : myLocation ? "Atualizar" : "Ordenar por proximidade"}
+            </button>
+            {myLocation && (
+              <button
+                type="button"
+                onClick={clearProximity}
+                className="btn-secondary text-xs px-3 py-1.5"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+          {geoError && (
+            <p className="text-xs text-red-600">{geoError}</p>
+          )}
+          {myLocation && !geoError && (
+            <p className="text-xs text-green-700">
+              ✓ Eventos ordenados pelos mais próximos
+            </p>
+          )}
+        </form>
 
         <div className="card p-4">
           <p className="label">Filtrar por igreja</p>
@@ -141,7 +231,9 @@ export function EventsExplorer({ events, churches }: Props) {
             Nenhum evento encontrado com esses filtros.
           </div>
         ) : (
-          filtered.map((e) => <EventCard key={e.id} event={e} />)
+          filtered.map(({ event, distanceKm }) => (
+            <EventCard key={event.id} event={event} distanceKm={distanceKm} />
+          ))
         )}
       </section>
     </div>
@@ -178,44 +270,51 @@ function FilterChip({
   );
 }
 
-function EventCard({ event }: { event: EventWithChurch }) {
+function EventCard({
+  event,
+  distanceKm,
+}: {
+  event: EventWithChurch;
+  distanceKm?: number | null;
+}) {
   const address = event.location || event.church?.address || null;
   return (
-    <div className="card overflow-hidden hover:shadow-md transition-shadow">
-      <Link href={`/eventos/${event.id}`} className="block p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              {event.church && (
-                <span
-                  className="inline-block w-2 h-2 rounded-full"
-                  style={{ backgroundColor: event.church.color ?? "#3b65ff" }}
-                />
-              )}
-              <span className="text-xs text-slate-500">
-                {event.church?.name ?? "Evento geral"}
-              </span>
-            </div>
-            <h3 className="font-semibold text-slate-900">{event.title}</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              📅 {formatShort(event.start_at)}
-              {address && <> · 📍 {address}</>}
+    <Link
+      href={`/eventos/${event.id}`}
+      className="block card p-4 hover:shadow-md transition-shadow"
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            {event.church && (
+              <span
+                className="inline-block w-2 h-2 rounded-full"
+                style={{ backgroundColor: event.church.color ?? "#3b65ff" }}
+              />
+            )}
+            <span className="text-xs text-slate-500">
+              {event.church?.name ?? "Evento geral"}
+            </span>
+          </div>
+          <h3 className="font-semibold text-slate-900">{event.title}</h3>
+          <p className="text-sm text-slate-600 mt-1">
+            📅 {formatShort(event.start_at)}
+            {address && <> · 📍 {address}</>}
+          </p>
+          {distanceKm != null && (
+            <p className="text-xs text-brand-700 mt-1 font-medium">
+              ~ {formatKm(distanceKm)} do seu endereço
             </p>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-xs text-slate-400">presenças</div>
-            <div className="text-lg font-bold text-brand-600">
-              {event.attendance_count ?? 0}
-            </div>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          <div className="text-xs text-slate-400">presenças</div>
+          <div className="text-lg font-bold text-brand-600">
+            {event.attendance_count ?? 0}
           </div>
         </div>
-      </Link>
-      {address && (
-        <div className="px-4 pb-4">
-          <EventMap address={address} height={180} />
-        </div>
-      )}
-    </div>
+      </div>
+    </Link>
   );
 }
 

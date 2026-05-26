@@ -61,6 +61,20 @@ export default async function EventPage({ params }: { params: { id: string } }) 
             {event.church?.address && !event.location && (
               <p>📍 {event.church.address}</p>
             )}
+            {event.church?.instagram && (
+              <p>
+                <a
+                  href={`https://instagram.com/${event.church.instagram.replace(/^@/, "")}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-brand-700 hover:underline"
+                >
+                  📷 {event.church.instagram.startsWith("@")
+                    ? event.church.instagram
+                    : `@${event.church.instagram}`}
+                </a>
+              </p>
+            )}
           </div>
 
           {event.description && (
