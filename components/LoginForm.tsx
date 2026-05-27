@@ -29,21 +29,27 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} className="space-y-3">
       <div>
-        <label className="label">Email</label>
+        <label className="label" htmlFor="login-email">Email</label>
         <input
+          id="login-email"
           className="input"
           type="email"
           required
+          autoComplete="email"
+          autoFocus
+          inputMode="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
       </div>
       <div>
-        <label className="label">Senha</label>
+        <label className="label" htmlFor="login-password">Senha</label>
         <input
+          id="login-password"
           className="input"
           type="password"
           required
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />

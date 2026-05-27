@@ -13,7 +13,7 @@ export function SignOutButton() {
         router.replace("/admin/login");
         router.refresh();
       }}
-      className="text-xs text-slate-500 hover:text-red-600"
+      className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors"
     >
       sair
     </button>

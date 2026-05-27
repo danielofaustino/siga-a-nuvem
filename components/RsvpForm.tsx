@@ -37,8 +37,12 @@ export function RsvpForm({ eventId }: Props) {
 
   if (done) {
     return (
-      <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-green-800 text-sm">
-        ✅ Presença confirmada! Te vemos no evento, {name.split(" ")[0]}. Deus te abençoe 🙏
+      <div className="rounded-lg bg-green-50 border border-green-200 p-4 text-green-800 text-sm fade-in flex items-start gap-2">
+        <span className="text-lg leading-none" aria-hidden>✅</span>
+        <span>
+          Presença confirmada! Te vemos no evento, <strong>{name.split(" ")[0]}</strong>. Deus
+          te abençoe 🙏
+        </span>
       </div>
     );
   }
@@ -46,10 +50,12 @@ export function RsvpForm({ eventId }: Props) {
   return (
     <form onSubmit={onSubmit} className="space-y-2 sm:space-y-3">
       <div>
-        <label className="label">Nome completo *</label>
+        <label className="label" htmlFor="rsvp-name">Nome completo *</label>
         <input
+          id="rsvp-name"
           className="input"
           required
+          autoComplete="name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Seu nome"
@@ -57,19 +63,22 @@ export function RsvpForm({ eventId }: Props) {
       </div>
       <div className="grid sm:grid-cols-2 gap-2 sm:gap-3">
         <div>
-          <label className="label">WhatsApp *</label>
+          <label className="label" htmlFor="rsvp-whatsapp">WhatsApp *</label>
           <input
+            id="rsvp-whatsapp"
             className="input"
             required
             inputMode="tel"
+            autoComplete="tel"
             value={whatsapp}
             onChange={(e) => setWhatsapp(e.target.value)}
             placeholder="(18) 99999-9999"
           />
         </div>
         <div>
-          <label className="label">Instagram</label>
+          <label className="label" htmlFor="rsvp-instagram">Instagram</label>
           <input
+            id="rsvp-instagram"
             className="input"
             value={instagram}
             onChange={(e) => setInstagram(e.target.value)}

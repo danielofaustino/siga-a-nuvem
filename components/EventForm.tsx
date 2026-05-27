@@ -293,29 +293,30 @@ export function EventForm({ churches, event }: Props) {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-3">
+      <div className="sticky bottom-0 -mx-4 -mb-3 px-4 py-3 bg-white/95 backdrop-blur border-t border-slate-100 flex items-center justify-between gap-2 sm:static sm:mx-0 sm:mb-0 sm:px-0 sm:py-0 sm:bg-transparent sm:backdrop-blur-none sm:border-0 sm:gap-3">
         <div>
           {editing && (
             <button
               type="button"
               onClick={onDelete}
-              className="btn-danger"
+              className="btn-danger text-sm"
               disabled={loading}
             >
               Excluir
             </button>
           )}
         </div>
-        <div className="flex gap-3">
+        <div className="flex gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => router.push("/admin")}
-            className="btn-secondary"
+            className="btn-secondary text-sm"
+            disabled={loading}
           >
             Cancelar
           </button>
-          <button type="submit" disabled={loading} className="btn-primary">
-            {loading ? "Salvando..." : editing ? "Salvar alterações" : "Criar evento"}
+          <button type="submit" disabled={loading} className="btn-primary text-sm">
+            {loading ? "Salvando..." : editing ? "Salvar" : "Criar"}
           </button>
         </div>
       </div>

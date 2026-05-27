@@ -195,8 +195,8 @@ export function EventsExplorer({ events, churches }: Props) {
 
   return (
     <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-      {/* botão pra abrir filtros — só no mobile */}
-      <div className="md:hidden flex items-center justify-between gap-2">
+      {/* botão pra abrir filtros — só no mobile, fica fixo abaixo do header */}
+      <div className="md:hidden sticky top-[60px] z-20 -mx-4 px-4 py-2 bg-slate-50/85 backdrop-blur flex items-center justify-between gap-2">
         <button
           type="button"
           onClick={() => setFiltersOpen(true)}
@@ -220,7 +220,7 @@ export function EventsExplorer({ events, churches }: Props) {
           type="button"
           aria-label="Fechar filtros"
           onClick={() => setFiltersOpen(false)}
-          className="md:hidden fixed inset-0 z-40 bg-slate-900/40"
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/40 backdrop-blur-sm fade-in"
         />
       )}
 
@@ -374,8 +374,28 @@ export function EventsExplorer({ events, churches }: Props) {
       {/* lista de eventos */}
       <section className="space-y-3">
         {filtered.length === 0 ? (
-          <div className="card p-8 text-center text-slate-500">
-            Nenhum evento encontrado com esses filtros.
+          <div className="card p-8 text-center text-slate-500 space-y-3">
+            <div className="text-4xl" aria-hidden>
+              🔍
+            </div>
+            <p className="font-medium text-slate-700">Nenhum evento encontrado</p>
+            <p className="text-xs">Tente ajustar os filtros ou limpar a busca.</p>
+            {activeFilterCount > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearch("");
+                  setActiveTags([]);
+                  setChurchFilter("all");
+                  setSelectedDate(null);
+                  setMyLocation(null);
+                  setGeoError(null);
+                }}
+                className="btn-secondary text-xs mt-2"
+              >
+                Limpar todos os filtros
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -440,23 +460,25 @@ function EventCard({
   return (
     <Link
       href={`/eventos/${event.id}`}
-      className="block card p-4 hover:shadow-md transition-shadow"
+      className="group block card p-4 transition-all duration-200 hover:shadow-md hover:border-brand-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
     >
       <div className="flex items-start justify-between gap-3">
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             {event.church && (
               <span
-                className="inline-block w-2 h-2 rounded-full"
+                className="inline-block w-2 h-2 rounded-full shrink-0"
                 style={{ backgroundColor: event.church.color ?? "#3b65ff" }}
               />
             )}
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 truncate">
               {event.church?.name ?? "Evento geral"}
             </span>
           </div>
-          <h3 className="font-semibold text-slate-900">{event.title}</h3>
-          <p className="text-sm text-slate-600 mt-1">
+          <h3 className="font-semibold text-slate-900 group-hover:text-brand-700 transition-colors">
+            {event.title}
+          </h3>
+          <p className="text-sm text-slate-600 mt-1 break-words">
             📅 {formatShort(event.start_at)}
             {address && <> · 📍 {address}</>}
           </p>
@@ -479,7 +501,7 @@ function EventCard({
           )}
         </div>
         <div className="text-right shrink-0">
-          <div className="text-xs text-slate-400">presenças</div>
+          <div className="text-[10px] uppercase tracking-wide text-slate-400">presenças</div>
           <div className="text-lg font-bold text-brand-600">
             {event.attendance_count ?? 0}
           </div>
