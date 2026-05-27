@@ -54,6 +54,7 @@ export function EventsExplorer({ events, churches }: Props) {
       (pos) => {
         setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setGpsLoading(false);
+        setFiltersOpen(false);
       },
       (err) => {
         // 1: PERMISSION_DENIED, 2: POSITION_UNAVAILABLE, 3: TIMEOUT
@@ -74,12 +75,14 @@ export function EventsExplorer({ events, churches }: Props) {
   function clearProximity() {
     setMyLocation(null);
     setGeoError(null);
+    setFiltersOpen(false);
   }
 
   function toggleTag(tag: string) {
     setActiveTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
+    setFiltersOpen(false);
   }
 
   // todas as tags existentes nos eventos publicados (para os chips)
@@ -297,7 +300,10 @@ export function EventsExplorer({ events, churches }: Props) {
               {activeTags.length > 0 && (
                 <button
                   type="button"
-                  onClick={() => setActiveTags([])}
+                  onClick={() => {
+                    setActiveTags([]);
+                    setFiltersOpen(false);
+                  }}
                   className="text-xs text-slate-500 hover:text-slate-800 px-2"
                 >
                   limpar
@@ -312,14 +318,20 @@ export function EventsExplorer({ events, churches }: Props) {
           <div className="flex flex-wrap gap-2">
             <FilterChip
               active={churchFilter === "all"}
-              onClick={() => setChurchFilter("all")}
+              onClick={() => {
+                setChurchFilter("all");
+                setFiltersOpen(false);
+              }}
               label="Todas"
             />
             {churches.map((c) => (
               <FilterChip
                 key={c.id}
                 active={churchFilter === c.slug}
-                onClick={() => setChurchFilter(c.slug)}
+                onClick={() => {
+                  setChurchFilter(c.slug);
+                  setFiltersOpen(false);
+                }}
                 label={c.name}
                 color={c.color ?? undefined}
               />
@@ -332,13 +344,19 @@ export function EventsExplorer({ events, churches }: Props) {
           onCursor={setCursor}
           daysWithEvents={daysWithEvents}
           selected={selectedDate}
-          onSelect={(d) => setSelectedDate((prev) => (prev && isSameDay(prev, d) ? null : d))}
+          onSelect={(d) => {
+            setSelectedDate((prev) => (prev && isSameDay(prev, d) ? null : d));
+            setFiltersOpen(false);
+          }}
         />
 
         {selectedDate && (
           <button
             className="btn-secondary w-full"
-            onClick={() => setSelectedDate(null)}
+            onClick={() => {
+              setSelectedDate(null);
+              setFiltersOpen(false);
+            }}
           >
             Limpar data: {format(selectedDate, "dd/MM/yyyy")}
           </button>
