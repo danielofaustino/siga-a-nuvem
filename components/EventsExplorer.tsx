@@ -36,6 +36,7 @@ export function EventsExplorer({ events, churches }: Props) {
   const [search, setSearch] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
   const [page, setPage] = useState(1);
+  const [filtersOpen, setFiltersOpen] = useState(false);
 
   // proximidade via GPS do dispositivo
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -147,6 +148,24 @@ export function EventsExplorer({ events, churches }: Props) {
   const pageStart = (page - 1) * PAGE_SIZE;
   const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
+  // contador de filtros ativos (para badge do botão no mobile)
+  const activeFilterCount =
+    (search ? 1 : 0) +
+    (churchFilter !== "all" ? 1 : 0) +
+    (selectedDate ? 1 : 0) +
+    (myLocation ? 1 : 0) +
+    activeTags.length;
+
+  // trava o scroll do body enquanto o drawer está aberto no mobile
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [filtersOpen]);
+
   // dias do mês atual com eventos (para destacar no mini calendário).
   // Para eventos multi-dia, marca cada dia do intervalo.
   const daysWithEvents = useMemo(() => {
@@ -173,8 +192,53 @@ export function EventsExplorer({ events, churches }: Props) {
 
   return (
     <div className="grid gap-6 md:grid-cols-[320px_1fr]">
-      {/* sidebar de filtros + calendário */}
-      <aside className="space-y-4">
+      {/* botão pra abrir filtros — só no mobile */}
+      <div className="md:hidden flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(true)}
+          className="btn-secondary text-sm inline-flex items-center gap-2"
+        >
+          <span aria-hidden>☰</span> Filtros
+          {activeFilterCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full bg-brand-600 text-white text-[10px] font-bold">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+        <p className="text-xs text-slate-500">
+          {filtered.length} evento{filtered.length === 1 ? "" : "s"}
+        </p>
+      </div>
+
+      {/* overlay do drawer no mobile */}
+      {filtersOpen && (
+        <button
+          type="button"
+          aria-label="Fechar filtros"
+          onClick={() => setFiltersOpen(false)}
+          className="md:hidden fixed inset-0 z-40 bg-slate-900/40"
+        />
+      )}
+
+      {/* sidebar de filtros + calendário — drawer no mobile, estático no desktop */}
+      <aside
+        className={`space-y-4 md:static md:translate-x-0 md:w-auto md:max-w-none md:h-auto md:overflow-visible md:bg-transparent md:p-0 md:shadow-none md:z-auto fixed inset-y-0 left-0 z-50 w-[85%] max-w-sm h-full overflow-y-auto bg-slate-50 p-4 shadow-xl transition-transform duration-200 ease-out ${
+          filtersOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="md:hidden flex items-center justify-between mb-2">
+          <p className="font-semibold text-slate-900">Filtros</p>
+          <button
+            type="button"
+            onClick={() => setFiltersOpen(false)}
+            className="text-slate-500 hover:text-slate-900 text-2xl leading-none px-2"
+            aria-label="Fechar filtros"
+          >
+            ×
+          </button>
+        </div>
+
         <div className="card p-4">
           <label className="label">Buscar</label>
           <input
@@ -279,6 +343,14 @@ export function EventsExplorer({ events, churches }: Props) {
             Limpar data: {format(selectedDate, "dd/MM/yyyy")}
           </button>
         )}
+
+        <button
+          type="button"
+          onClick={() => setFiltersOpen(false)}
+          className="btn-primary w-full md:hidden"
+        >
+          Ver {filtered.length} evento{filtered.length === 1 ? "" : "s"}
+        </button>
       </aside>
 
       {/* lista de eventos */}
