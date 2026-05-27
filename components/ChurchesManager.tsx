@@ -121,7 +121,7 @@ export function ChurchesManager({ initial }: Props) {
         )}
       </div>
 
-      <form onSubmit={addChurch} className="card p-4 space-y-3">
+      <form onSubmit={addChurch} className="card p-3 space-y-2 sm:p-4 sm:space-y-3">
         <h2 className="font-semibold">Adicionar igreja</h2>
         <div>
           <label className="label">Nome</label>
@@ -219,7 +219,7 @@ function ChurchEditRow({ church, onCancel, onSaved }: EditProps) {
   return (
     <form
       onSubmit={save}
-      className="p-3 rounded border border-brand-200 bg-brand-50/40 space-y-2"
+      className="p-2 rounded border border-brand-200 bg-brand-50/40 space-y-1.5 sm:p-3 sm:space-y-2"
     >
       <div>
         <label className="label">Nome</label>

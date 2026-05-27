@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { EventWithChurch, Church } from "@/lib/types";
 import { formatShort, formatDay, formatTime } from "@/lib/format";
@@ -27,12 +27,15 @@ type Props = {
   churches: Church[];
 };
 
+const PAGE_SIZE = 5;
+
 export function EventsExplorer({ events, churches }: Props) {
   const [churchFilter, setChurchFilter] = useState<string>("all");
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [cursor, setCursor] = useState<Date>(new Date());
   const [search, setSearch] = useState("");
   const [activeTags, setActiveTags] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
 
   // proximidade via GPS do dispositivo
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -134,6 +137,15 @@ export function EventsExplorer({ events, churches }: Props) {
     }
     return list;
   }, [events, churchFilter, selectedDate, search, myLocation, activeTags]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // Se filtros mudam e a página atual ficou fora do range, volta pra 1.
+  useEffect(() => {
+    setPage(1);
+  }, [churchFilter, selectedDate, search, myLocation, activeTags]);
+
+  const pageStart = (page - 1) * PAGE_SIZE;
+  const pageItems = filtered.slice(pageStart, pageStart + PAGE_SIZE);
 
   // dias do mês atual com eventos (para destacar no mini calendário).
   // Para eventos multi-dia, marca cada dia do intervalo.
@@ -276,9 +288,21 @@ export function EventsExplorer({ events, churches }: Props) {
             Nenhum evento encontrado com esses filtros.
           </div>
         ) : (
-          filtered.map(({ event, distanceKm }) => (
-            <EventCard key={event.id} event={event} distanceKm={distanceKm} />
-          ))
+          <>
+            {pageItems.map(({ event, distanceKm }) => (
+              <EventCard key={event.id} event={event} distanceKm={distanceKm} />
+            ))}
+            {totalPages > 1 && (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={filtered.length}
+                pageStart={pageStart}
+                pageEnd={pageStart + pageItems.length}
+                onPage={setPage}
+              />
+            )}
+          </>
         )}
       </section>
     </div>
@@ -372,6 +396,55 @@ function EventCard({
         </div>
       </div>
     </Link>
+  );
+}
+
+function Pagination({
+  page,
+  totalPages,
+  total,
+  pageStart,
+  pageEnd,
+  onPage,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  pageStart: number;
+  pageEnd: number;
+  onPage: (n: number) => void;
+}) {
+  const prev = () => onPage(Math.max(1, page - 1));
+  const next = () => onPage(Math.min(totalPages, page + 1));
+  return (
+    <div className="flex items-center justify-between gap-2 pt-2">
+      <p className="text-xs text-slate-500">
+        {pageStart + 1}–{pageEnd} de {total}
+      </p>
+      <div className="flex items-center gap-1">
+        <button
+          type="button"
+          onClick={prev}
+          disabled={page === 1}
+          className="btn-secondary text-xs px-2.5 py-1 disabled:opacity-40"
+          aria-label="página anterior"
+        >
+          ‹
+        </button>
+        <span className="text-xs text-slate-600 px-2">
+          {page} / {totalPages}
+        </span>
+        <button
+          type="button"
+          onClick={next}
+          disabled={page === totalPages}
+          className="btn-secondary text-xs px-2.5 py-1 disabled:opacity-40"
+          aria-label="próxima página"
+        >
+          ›
+        </button>
+      </div>
+    </div>
   );
 }
 

@@ -115,7 +115,7 @@ export function EventForm({ churches, event }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="card p-6 space-y-4">
+    <form onSubmit={onSubmit} className="card p-4 space-y-3 sm:p-6 sm:space-y-4">
       <div>
         <label className="label">Título *</label>
         <input className="input" required value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -124,13 +124,13 @@ export function EventForm({ churches, event }: Props) {
       <div>
         <label className="label">Descrição</label>
         <textarea
-          className="input min-h-[100px]"
+          className="input min-h-[72px] sm:min-h-[100px]"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="label">Igreja</label>
           <select
@@ -172,7 +172,7 @@ export function EventForm({ churches, event }: Props) {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="label">Início *</label>
           <input
@@ -195,7 +195,7 @@ export function EventForm({ churches, event }: Props) {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
         <div>
           <label className="label">URL da imagem (opcional)</label>
           <input className="input" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} />
@@ -272,12 +272,12 @@ export function EventForm({ churches, event }: Props) {
         </div>
       </div>
 
-      <div className="flex items-center gap-6">
-        <label className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-4 sm:gap-6">
+        <label className="flex items-center gap-2 text-xs sm:text-sm">
           <input type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
           Dia inteiro
         </label>
-        <label className="flex items-center gap-2 text-sm">
+        <label className="flex items-center gap-2 text-xs sm:text-sm">
           <input
             type="checkbox"
             checked={isPublished}

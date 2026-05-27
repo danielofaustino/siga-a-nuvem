@@ -44,7 +44,7 @@ export function RsvpForm({ eventId }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-3">
+    <form onSubmit={onSubmit} className="space-y-2 sm:space-y-3">
       <div>
         <label className="label">Nome completo *</label>
         <input
@@ -55,7 +55,7 @@ export function RsvpForm({ eventId }: Props) {
           placeholder="Seu nome"
         />
       </div>
-      <div className="grid sm:grid-cols-2 gap-3">
+      <div className="grid sm:grid-cols-2 gap-2 sm:gap-3">
         <div>
           <label className="label">WhatsApp *</label>
           <input
