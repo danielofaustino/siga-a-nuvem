@@ -14,6 +14,7 @@ const EventSchema = z.object({
   image_url: z.string().url().nullable().optional(),
   capacity: z.number().int().positive().nullable().optional(),
   is_published: z.boolean().default(true),
+  tags: z.array(z.string().min(1).max(40)).max(20).default([]),
 });
 
 export async function POST(req: NextRequest) {

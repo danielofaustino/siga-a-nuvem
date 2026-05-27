@@ -55,6 +55,19 @@ export default async function EventPage({ params }: { params: { id: string } }) 
 
           <h1 className="text-2xl font-bold text-slate-900">{event.title}</h1>
 
+          {event.tags && event.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {event.tags.map((t: string) => (
+                <span
+                  key={t}
+                  className="text-xs uppercase tracking-wide px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 font-medium"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
+
           <div className="text-sm text-slate-600 space-y-1">
             <p>📅 {formatEventDate(event.start_at, event.all_day)}</p>
             {event.location && <p>📍 {event.location}</p>}

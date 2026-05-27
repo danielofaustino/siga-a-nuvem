@@ -28,6 +28,25 @@ export function EventForm({ churches, event }: Props) {
   const [imageUrl, setImageUrl] = useState(event?.image_url ?? "");
   const [capacity, setCapacity] = useState(event?.capacity?.toString() ?? "");
   const [isPublished, setIsPublished] = useState(event?.is_published ?? true);
+  const [tags, setTags] = useState<string[]>(event?.tags ?? []);
+  const [tagInput, setTagInput] = useState("");
+
+  const SUGGESTED_TAGS = ["jovens", "adolescentes", "irmãs", "varões"];
+
+  function normalizeTag(t: string) {
+    return t.trim().toLowerCase();
+  }
+
+  function addTag(raw: string) {
+    const t = normalizeTag(raw);
+    if (!t) return;
+    setTags((prev) => (prev.includes(t) ? prev : [...prev, t]));
+    setTagInput("");
+  }
+
+  function removeTag(t: string) {
+    setTags((prev) => prev.filter((x) => x !== t));
+  }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,6 +72,7 @@ export function EventForm({ churches, event }: Props) {
       image_url: imageUrl || null,
       capacity: capacity ? parseInt(capacity, 10) : null,
       is_published: isPublished,
+      tags,
     };
 
     try {
@@ -189,6 +209,66 @@ export function EventForm({ churches, event }: Props) {
             onChange={(e) => setCapacity(e.target.value)}
             min={1}
           />
+        </div>
+      </div>
+
+      <div>
+        <label className="label">Tags</label>
+        <div className="flex flex-wrap gap-1.5 mb-2">
+          {tags.length === 0 && (
+            <span className="text-xs text-slate-400">Nenhuma tag — adicione abaixo.</span>
+          )}
+          {tags.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-medium"
+            >
+              {t}
+              <button
+                type="button"
+                onClick={() => removeTag(t)}
+                className="hover:text-red-600"
+                aria-label={`remover ${t}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            className="input flex-1"
+            value={tagInput}
+            placeholder="Digite e pressione Enter"
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === ",") {
+                e.preventDefault();
+                addTag(tagInput);
+              } else if (e.key === "Backspace" && !tagInput && tags.length) {
+                removeTag(tags[tags.length - 1]);
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="btn-secondary text-xs px-3"
+            onClick={() => addTag(tagInput)}
+          >
+            Adicionar
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {SUGGESTED_TAGS.filter((t) => !tags.includes(t)).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => addTag(t)}
+              className="text-xs text-slate-500 px-2 py-0.5 rounded border border-dashed border-slate-300 hover:bg-slate-50"
+            >
+              + {t}
+            </button>
+          ))}
         </div>
       </div>
 

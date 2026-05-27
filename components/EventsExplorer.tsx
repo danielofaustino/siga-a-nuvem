@@ -32,38 +32,12 @@ export function EventsExplorer({ events, churches }: Props) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [cursor, setCursor] = useState<Date>(new Date());
   const [search, setSearch] = useState("");
+  const [activeTags, setActiveTags] = useState<string[]>([]);
 
-  // proximidade — origem pode ser endereço digitado OU GPS do dispositivo
-  const [myAddress, setMyAddress] = useState("");
+  // proximidade via GPS do dispositivo
   const [myLocation, setMyLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [locationSource, setLocationSource] = useState<"address" | "gps" | null>(null);
-  const [geoLoading, setGeoLoading] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
-
-  async function applyProximity(e: React.FormEvent) {
-    e.preventDefault();
-    if (!myAddress.trim()) return;
-    setGeoLoading(true);
-    setGeoError(null);
-    try {
-      const res = await fetch("/api/geocode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ address: myAddress }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "Erro ao localizar endereço");
-      setMyLocation({ lat: json.lat, lng: json.lng });
-      setLocationSource("address");
-    } catch (err: any) {
-      setMyLocation(null);
-      setLocationSource(null);
-      setGeoError(err.message);
-    } finally {
-      setGeoLoading(false);
-    }
-  }
 
   function useDeviceLocation() {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -75,8 +49,6 @@ export function EventsExplorer({ events, churches }: Props) {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setMyLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocationSource("gps");
-        setMyAddress("");
         setGpsLoading(false);
       },
       (err) => {
@@ -89,7 +61,6 @@ export function EventsExplorer({ events, churches }: Props) {
             : "Não foi possível obter sua localização.";
         setGeoError(msg);
         setMyLocation(null);
-        setLocationSource(null);
         setGpsLoading(false);
       },
       { enableHighAccuracy: false, timeout: 10000, maximumAge: 60_000 },
@@ -97,11 +68,22 @@ export function EventsExplorer({ events, churches }: Props) {
   }
 
   function clearProximity() {
-    setMyAddress("");
     setMyLocation(null);
-    setLocationSource(null);
     setGeoError(null);
   }
+
+  function toggleTag(tag: string) {
+    setActiveTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
+    );
+  }
+
+  // todas as tags existentes nos eventos publicados (para os chips)
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const e of events) for (const t of e.tags ?? []) set.add(t);
+    return Array.from(set).sort();
+  }, [events]);
 
   // Lista filtrada e (se proximidade ativa) ordenada por distância,
   // com a distância de cada evento já calculada para o card.
@@ -109,6 +91,11 @@ export function EventsExplorer({ events, churches }: Props) {
     const list = events
       .filter((e) => {
         if (churchFilter !== "all" && e.church?.slug !== churchFilter) return false;
+        if (activeTags.length > 0) {
+          // OR: evento aparece se tem ao menos uma das tags selecionadas
+          const evTags = e.tags ?? [];
+          if (!activeTags.some((t) => evTags.includes(t))) return false;
+        }
         if (selectedDate) {
           const overlap = areIntervalsOverlapping(
             { start: parseISO(e.start_at), end: parseISO(e.end_at) },
@@ -146,7 +133,7 @@ export function EventsExplorer({ events, churches }: Props) {
       });
     }
     return list;
-  }, [events, churchFilter, selectedDate, search, myLocation]);
+  }, [events, churchFilter, selectedDate, search, myLocation, activeTags]);
 
   // dias do mês atual com eventos (para destacar no mini calendário).
   // Para eventos multi-dia, marca cada dia do intervalo.
@@ -186,26 +173,20 @@ export function EventsExplorer({ events, churches }: Props) {
           />
         </div>
 
-        <form className="card p-4 space-y-2" onSubmit={applyProximity}>
-          <label className="label">Meu endereço</label>
-          <input
-            className="input"
-            placeholder="Rua, número, cidade"
-            value={myAddress}
-            onChange={(e) => setMyAddress(e.target.value)}
-            disabled={gpsLoading}
-          />
+        <div className="card p-4 space-y-2">
+          <label className="label">Proximidade</label>
           <div className="flex items-center gap-2">
             <button
-              type="submit"
-              disabled={geoLoading || gpsLoading || !myAddress.trim()}
+              type="button"
+              onClick={useDeviceLocation}
+              disabled={gpsLoading}
               className="btn-primary flex-1 py-1.5 text-xs"
             >
-              {geoLoading
-                ? "Localizando..."
-                : locationSource === "address"
-                ? "Atualizar"
-                : "Usar endereço"}
+              {gpsLoading
+                ? "Obtendo localização..."
+                : myLocation
+                ? "📍 Atualizar localização"
+                : "📍 Usar minha localização"}
             </button>
             {myLocation && (
               <button
@@ -217,34 +198,38 @@ export function EventsExplorer({ events, churches }: Props) {
               </button>
             )}
           </div>
-
-          <div className="flex items-center gap-2 my-1">
-            <div className="flex-1 h-px bg-slate-200" />
-            <span className="text-[10px] uppercase tracking-wide text-slate-400">ou</span>
-            <div className="flex-1 h-px bg-slate-200" />
-          </div>
-
-          <button
-            type="button"
-            onClick={useDeviceLocation}
-            disabled={gpsLoading || geoLoading}
-            className="btn-secondary w-full text-xs py-1.5"
-          >
-            {gpsLoading
-              ? "Obtendo localização..."
-              : locationSource === "gps"
-              ? "📍 Usando sua localização atual"
-              : "📍 Usar minha localização (GPS)"}
-          </button>
-
           {geoError && <p className="text-xs text-red-600">{geoError}</p>}
           {myLocation && !geoError && (
             <p className="text-xs text-green-700">
               ✓ Eventos ordenados pelos mais próximos
-              {locationSource === "gps" ? " (via GPS)" : ""}
             </p>
           )}
-        </form>
+        </div>
+
+        {allTags.length > 0 && (
+          <div className="card p-4">
+            <p className="label">Filtrar por tag</p>
+            <div className="flex flex-wrap gap-2">
+              {allTags.map((t) => (
+                <FilterChip
+                  key={t}
+                  active={activeTags.includes(t)}
+                  onClick={() => toggleTag(t)}
+                  label={t}
+                />
+              ))}
+              {activeTags.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveTags([])}
+                  className="text-xs text-slate-500 hover:text-slate-800 px-2"
+                >
+                  limpar
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="card p-4">
           <p className="label">Filtrar por igreja</p>
@@ -361,9 +346,21 @@ function EventCard({
             📅 {formatShort(event.start_at)}
             {address && <> · 📍 {address}</>}
           </p>
+          {event.tags && event.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-2">
+              {event.tags.map((t) => (
+                <span
+                  key={t}
+                  className="text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          )}
           {distanceKm != null && (
             <p className="text-xs text-brand-700 mt-1 font-medium">
-              ~ {formatKm(distanceKm)} do seu endereço
+              ~ {formatKm(distanceKm)} de você
             </p>
           )}
         </div>

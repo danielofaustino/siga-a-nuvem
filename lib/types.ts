@@ -22,6 +22,7 @@ export type EventRow = {
   image_url: string | null;
   capacity: number | null;
   is_published: boolean;
+  tags: string[];
   created_at: string;
   updated_at: string;
 };
